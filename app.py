@@ -13,7 +13,7 @@ from tempfile import NamedTemporaryFile
 def load_model_and_detector():
     model = tf.keras.models.load_model("mode_own.h5")
     detector = dlib.get_frontal_face_detector()
-    predictor = dlib.shape_predictor("https://raw.githubusercontent.com/ageitgey/face_recognition_models/refs/heads/master/face_recognition_models/models/shape_predictor_68_face_landmarks.dat")
+    predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
     return model, detector, predictor
 
 model, detector, predictor = load_model_and_detector()
@@ -107,4 +107,5 @@ if uploaded_file is not None:
     avg_prediction = np.mean(all_predictions)
     final_label = "Truthful" if avg_prediction >= 0.5 else "Deceptive"
     st.subheader(f"Final Average Prediction: {final_label} ({avg_prediction:.2f})")
+
 
