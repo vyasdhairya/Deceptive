@@ -1,3 +1,4 @@
+!wget https://github.com/ageitgey/face_recognition_models/raw/refs/heads/master/face_recognition_models/models/shape_predictor_68_face_landmarks.dat
 import streamlit as st
 import cv2
 import dlib
@@ -107,5 +108,6 @@ if uploaded_file is not None:
     avg_prediction = np.mean(all_predictions)
     final_label = "Truthful" if avg_prediction >= 0.5 else "Deceptive"
     st.subheader(f"Final Average Prediction: {final_label} ({avg_prediction:.2f})")
+
 
 
