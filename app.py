@@ -32,7 +32,7 @@ def load_model_and_detector():
 model, detector, predictor = load_model_and_detector()
 
 # -------------------------
-# Feature extraction function
+# Feature extraction
 # -------------------------
 def extract_features(landmarks):
     features = {}
@@ -65,7 +65,7 @@ def extract_features(landmarks):
 # -------------------------
 # Streamlit UI
 # -------------------------
-st.title("Video Facial Expression Prediction")
+st.title("Video Facial Expression Prediction (First 10 Frames)")
 uploaded_file = st.file_uploader("Upload a video file", type=["mp4", "mov", "avi"])
 
 if uploaded_file is not None:
@@ -74,54 +74,45 @@ if uploaded_file is not None:
     video_path = temp_video.name
 
     cap = cv2.VideoCapture(video_path)
-    frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-
     stframe = st.empty()
     all_predictions = []
-    
-    frame_interval = 30  # process every 30th frame
-    frame_number = 1
 
-    while cap.isOpened():
+    for frame_number in range(10):  # Only first 10 frames
         ret, frame = cap.read()
         if not ret:
             break
 
-        if frame_number % frame_interval == 0:
-            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            faces = detector(gray)
-            all_features = []
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        faces = detector(gray)
+        all_features = []
 
-            if faces:
-                for face in faces:
-                    landmarks = predictor(gray, face)
-                    features = extract_features(landmarks.parts())
-                    all_features.append(features)
-                    for n in range(68):
-                        x, y = landmarks.part(n).x, landmarks.part(n).y
-                        cv2.circle(frame, (x, y), 1, (255, 0, 0), -1)
-            else:
-                all_features.append({k: 0 for k in extract_features([dlib.point(0, 0)]*68).keys()})
+        if faces:
+            for face in faces:
+                landmarks = predictor(gray, face)
+                features = extract_features(landmarks.parts())
+                all_features.append(features)
+                for n in range(68):
+                    x, y = landmarks.part(n).x, landmarks.part(n).y
+                    cv2.circle(frame, (x, y), 1, (255, 0, 0), -1)
+        else:
+            all_features.append({k: 0 for k in extract_features([dlib.point(0, 0)] * 68).keys()})
 
-            df = pd.DataFrame(all_features)
-            pred_class = np.argmax(model.predict(df.to_numpy()))
-            all_predictions.append(pred_class)
+        df = pd.DataFrame(all_features)
+        pred_class = np.argmax(model.predict(df.to_numpy()))
+        all_predictions.append(pred_class)
 
-            label = "Truthful" if pred_class == 1 else "Deceptive"
-            cv2.putText(frame, f"Frame: {frame_number} {label}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+        label = "Truthful" if pred_class == 1 else "Deceptive"
+        cv2.putText(frame, f"Frame: {frame_number+1} {label}", (10, 30),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
 
-            stframe.image(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB), channels="RGB")
-
-        frame_number += 1
+        stframe.image(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB), channels="RGB")
 
     cap.release()
 
-    # Show average prediction
+    # Average prediction
     avg_prediction = np.mean(all_predictions)
     final_label = "Truthful" if avg_prediction >= 0.5 else "Deceptive"
     st.subheader(f"Final Average Prediction: {final_label} ({avg_prediction:.2f})")
-
-
 
 
 
