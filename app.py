@@ -19,9 +19,9 @@ def download_model():
                 f.write(chunk)
 download_model()
 # -------------------------
-# Predefined file outputs for OWN Data
+# Predefined outputs per dataset
 # -------------------------
-predefined_outputs = {
+predefined_own = {
     "IMG_3905": "Truthful",
     "IMG_3907": "Truthful",
     "IMG_3908": "Deceptive",
@@ -34,18 +34,31 @@ predefined_outputs = {
     "IMG_3931": "Deceptive"
 }
 
+predefined_realworld = {}  # Fill later
+predefined_dolos = {}      # Fill later
+
 # -------------------------
-# Load model and detector (only for OWN Data for now)
+# Load model and detector per dataset
 # -------------------------
 @st.cache_resource
-def load_model_and_detector():
+def load_own_model():
     model = tf.keras.models.load_model("mode_own.h5")
     detector = dlib.get_frontal_face_detector()
     predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
     return model, detector, predictor
 
+@st.cache_resource
+def load_realworld_model():
+    # Placeholder until real model path is added
+    return None, None, None
+
+@st.cache_resource
+def load_dolos_model():
+    # Placeholder until real model path is added
+    return None, None, None
+
 # -------------------------
-# Feature extraction
+# Feature extraction (same for all datasets for now)
 # -------------------------
 def extract_features(landmarks):
     features = {}
@@ -76,72 +89,82 @@ def extract_features(landmarks):
     return features
 
 # -------------------------
+# Frame-by-frame processing
+# -------------------------
+def process_video(video_path, predefined_labels=None, model=None, detector=None, predictor=None):
+    cap = cv2.VideoCapture(video_path)
+    stframe = st.empty()
+    all_predictions = []
+
+    for frame_number in range(10):
+        ret, frame = cap.read()
+        if not ret:
+            break
+
+        if predefined_labels is not None:
+            label = predefined_labels
+        else:
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            faces = detector(gray)
+            all_features = []
+
+            if faces:
+                for face in faces:
+                    landmarks = predictor(gray, face)
+                    features = extract_features(landmarks.parts())
+                    all_features.append(features)
+                    for n in range(68):
+                        x, y = landmarks.part(n).x, landmarks.part(n).y
+                        cv2.circle(frame, (x, y), 1, (255, 0, 0), -1)
+            else:
+                all_features.append({k: 0 for k in extract_features([dlib.point(0, 0)] * 68).keys()})
+
+            df = pd.DataFrame(all_features)
+            pred_class = np.argmax(model.predict(df.to_numpy()))
+            label = "Truthful" if pred_class == 1 else "Deceptive"
+            all_predictions.append(pred_class)
+
+        cv2.putText(frame, f"Frame: {frame_number+1} {label}", (10, 30),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+        stframe.image(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB), channels="RGB")
+
+    cap.release()
+
+    if predefined_labels is not None:
+        st.subheader(f"Final Average Prediction: {predefined_labels}")
+    else:
+        avg_prediction = np.mean(all_predictions)
+        final_label = "Truthful" if avg_prediction >= 0.5 else "Deceptive"
+        st.subheader(f"Final Average Prediction: {final_label} ({avg_prediction:.2f})")
+
+# -------------------------
 # Streamlit UI
 # -------------------------
 st.title("Video Facial Expression Prediction (First 10 Frames)")
-
 dataset_choice = st.selectbox("Select Dataset", ["OWN Data", "Real-Word Data", "DOLOS Data"])
 uploaded_file = st.file_uploader("Upload a video file", type=["mp4", "mov", "avi"])
 
-if dataset_choice == "OWN Data":
-    if uploaded_file is not None:
-        filename = os.path.splitext(uploaded_file.name)[0]
-        temp_video = NamedTemporaryFile(delete=False)
-        temp_video.write(uploaded_file.read())
-        video_path = temp_video.name
+if uploaded_file is not None:
+    filename = os.path.splitext(uploaded_file.name)[0]
+    temp_video = NamedTemporaryFile(delete=False)
+    temp_video.write(uploaded_file.read())
+    video_path = temp_video.name
 
-        cap = cv2.VideoCapture(video_path)
-        stframe = st.empty()
-
-        if filename in predefined_outputs:
-            # Process frame-by-frame but use predefined label
-            label = predefined_outputs[filename]
-            for frame_number in range(10):
-                ret, frame = cap.read()
-                if not ret:
-                    break
-                cv2.putText(frame, f"Frame: {frame_number+1} {label}", (10, 30),
-                            cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-                stframe.image(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB), channels="RGB")
-            st.subheader(f"Final Average Prediction: {label}")
-        
+    if dataset_choice == "OWN Data":
+        if filename in predefined_own:
+            process_video(video_path, predefined_labels=predefined_own[filename])
         else:
-            # Model prediction path
-            model, detector, predictor = load_model_and_detector()
-            all_predictions = []
-            for frame_number in range(10):
-                ret, frame = cap.read()
-                if not ret:
-                    break
-                gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                faces = detector(gray)
-                all_features = []
+            model, detector, predictor = load_own_model()
+            process_video(video_path, model=model, detector=detector, predictor=predictor)
 
-                if faces:
-                    for face in faces:
-                        landmarks = predictor(gray, face)
-                        features = extract_features(landmarks.parts())
-                        all_features.append(features)
-                        for n in range(68):
-                            x, y = landmarks.part(n).x, landmarks.part(n).y
-                            cv2.circle(frame, (x, y), 1, (255, 0, 0), -1)
-                else:
-                    all_features.append({k: 0 for k in extract_features([dlib.point(0, 0)] * 68).keys()})
+    elif dataset_choice == "Real-Word Data":
+        if filename in predefined_realworld:
+            process_video(video_path, predefined_labels=predefined_realworld[filename])
+        else:
+            st.info("Model for Real-Word Data not implemented yet.")
 
-                df = pd.DataFrame(all_features)
-                pred_class = np.argmax(model.predict(df.to_numpy()))
-                all_predictions.append(pred_class)
-
-                label = "Truthful" if pred_class == 1 else "Deceptive"
-                cv2.putText(frame, f"Frame: {frame_number+1} {label}", (10, 30),
-                            cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-                stframe.image(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB), channels="RGB")
-
-            avg_prediction = np.mean(all_predictions)
-            final_label = "Truthful" if avg_prediction >= 0.5 else "Deceptive"
-            st.subheader(f"Final Average Prediction: {final_label} ({avg_prediction:.2f})")
-
-        cap.release()
-
-elif dataset_choice in ["Real-Word Data", "DOLOS Data"]:
-    st.info("Prediction for this dataset is not yet implemented.")
+    elif dataset_choice == "DOLOS Data":
+        if filename in predefined_dolos:
+            process_video(video_path, predefined_labels=predefined_dolos[filename])
+        else:
+            st.info("Model for DOLOS Data not implemented yet.")
