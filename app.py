@@ -112,7 +112,8 @@ if uploaded_file is not None:
     # Average prediction
     avg_prediction = np.mean(all_predictions)
     final_label = "Truthful" if avg_prediction >= 0.5 else "Deceptive"
-    st.subheader(f"Final Average Prediction: {final_label} ({avg_prediction:.2f})")
+    st.subheader(f"Final Average Prediction: {final_label}")
+
 
 
 
