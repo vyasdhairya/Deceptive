@@ -1,9 +1,14 @@
 import streamlit as st
 import requests
 import os
+import cv2
+import dlib
+import numpy as np
+import pandas as pd
+import tensorflow as tf
+from tempfile import NamedTemporaryFile
 MODEL_URL = "https://github.com/ageitgey/face_recognition_models/raw/refs/heads/master/face_recognition_models/models/shape_predictor_68_face_landmarks.dat"
 MODEL_PATH = "shape_predictor_68_face_landmarks.dat"
-
 @st.cache_resource
 def download_model():
     if not os.path.exists(MODEL_PATH):
@@ -13,19 +18,9 @@ def download_model():
         with open(MODEL_PATH, "wb") as f:
             for chunk in response.iter_content(chunk_size=8192):
                 f.write(chunk)
-        st.write("Download complete ✅")
     else:
-        st.write("Model already exists locally ✅")
 # Run download at startup
 download_model()
-import streamlit as st
-import cv2
-import dlib
-import numpy as np
-import pandas as pd
-import tensorflow as tf
-from tempfile import NamedTemporaryFile
-
 # -------------------------
 # Load model and detector
 # -------------------------
@@ -127,6 +122,7 @@ if uploaded_file is not None:
     avg_prediction = np.mean(all_predictions)
     final_label = "Truthful" if avg_prediction >= 0.5 else "Deceptive"
     st.subheader(f"Final Average Prediction: {final_label} ({avg_prediction:.2f})")
+
 
 
 
