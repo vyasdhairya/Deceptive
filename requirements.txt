@@ -1,6 +1,5 @@
-dlib==19.24.6
+dlib-bin
 tensorflow
 keras
 opencv-python-headless
 scikit-learn
-
