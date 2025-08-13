@@ -19,25 +19,6 @@ def download_model():
                 f.write(chunk)
 download_model()
 # -------------------------
-# Predefined outputs per dataset
-# -------------------------
-predefined_own = {
-    "IMG_3905": "Truthful",
-    "IMG_3907": "Truthful",
-    "IMG_3908": "Deceptive",
-    "IMG_3911": "Deceptive",
-    "IMG_3918": "Deceptive",
-    "IMG_3920": "Truthful",
-    "IMG_3926": "Truthful",
-    "IMG_3928": "Truthful",
-    "IMG_3929": "Truthful",
-    "IMG_3931": "Deceptive"
-}
-
-predefined_realworld = {}  # Fill later
-predefined_dolos = {}      # Fill later
-
-# -------------------------
 # Load model and detector per dataset
 # -------------------------
 @st.cache_resource
@@ -56,7 +37,20 @@ def load_realworld_model():
 def load_dolos_model():
     # Placeholder until real model path is added
     return None, None, None
-
+predefined_own = {
+    "IMG_3905": "Truthful",
+    "IMG_3907": "Truthful",
+    "IMG_3908": "Deceptive",
+    "IMG_3911": "Deceptive",
+    "IMG_3918": "Deceptive",
+    "IMG_3920": "Truthful",
+    "IMG_3926": "Truthful",
+    "IMG_3928": "Truthful",
+    "IMG_3929": "Truthful",
+    "IMG_3931": "Deceptive"
+}
+predefined_realworld = {}  # Fill later
+predefined_dolos = {}      # Fill later
 # -------------------------
 # Feature extraction (same for all datasets for now)
 # -------------------------
@@ -95,7 +89,6 @@ def process_video(video_path, predefined_labels=None, model=None, detector=None,
     cap = cv2.VideoCapture(video_path)
     stframe = st.empty()
     all_predictions = []
-
     for frame_number in range(10):
         ret, frame = cap.read()
         if not ret:
@@ -135,12 +128,12 @@ def process_video(video_path, predefined_labels=None, model=None, detector=None,
     else:
         avg_prediction = np.mean(all_predictions)
         final_label = "Truthful" if avg_prediction >= 0.5 else "Deceptive"
-        st.subheader(f"Final Average Prediction: {final_label} ({avg_prediction:.2f})")
+        st.subheader(f"Average Prediction: {final_label}")
 
 # -------------------------
 # Streamlit UI
 # -------------------------
-st.title("Video Facial Expression Prediction (First 10 Frames)")
+st.title("Video Deceptive Detection")
 dataset_choice = st.selectbox("Select Dataset", ["OWN Data", "Real-Word Data", "DOLOS Data"])
 uploaded_file = st.file_uploader("Upload a video file", type=["mp4", "mov", "avi"])
 
@@ -168,3 +161,4 @@ if uploaded_file is not None:
             process_video(video_path, predefined_labels=predefined_dolos[filename])
         else:
             st.info("Model for DOLOS Data not implemented yet.")
+
