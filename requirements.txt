@@ -2,6 +2,4 @@ dlib==19.24.6
 tensorflow
 keras
 opencv-python
-scikit-learn==1.6.1
-matplotlib==3.10.0
-
+scikit-learn
