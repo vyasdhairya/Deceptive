@@ -18,8 +18,6 @@ def download_model():
         with open(MODEL_PATH, "wb") as f:
             for chunk in response.iter_content(chunk_size=8192):
                 f.write(chunk)
-    else:
-# Run download at startup
 download_model()
 # -------------------------
 # Load model and detector
@@ -122,6 +120,7 @@ if uploaded_file is not None:
     avg_prediction = np.mean(all_predictions)
     final_label = "Truthful" if avg_prediction >= 0.5 else "Deceptive"
     st.subheader(f"Final Average Prediction: {final_label} ({avg_prediction:.2f})")
+
 
 
 
