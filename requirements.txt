@@ -1,6 +1,6 @@
 dlib==19.24.6
-tensorflow==2.19.0
-keras==3.10.0
+tensorflow
+keras
 opencv-python==4.11.0
 scikit-learn==1.6.1
 matplotlib==3.10.0
