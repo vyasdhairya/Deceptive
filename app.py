@@ -12,7 +12,6 @@ MODEL_PATH = "shape_predictor_68_face_landmarks.dat"
 @st.cache_resource
 def download_model():
     if not os.path.exists(MODEL_PATH):
-        st.write("Downloading shape_predictor_68_face_landmarks.dat ...")
         response = requests.get(MODEL_URL, stream=True)
         response.raise_for_status()
         with open(MODEL_PATH, "wb") as f:
@@ -150,3 +149,4 @@ if uploaded_file is not None:
         avg_prediction = np.mean(all_predictions)
         final_label = "Truthful" if avg_prediction >= 0.5 else "Deceptive"
         st.subheader(f"Final Average Prediction: {final_label} ({avg_prediction:.2f})")
+
